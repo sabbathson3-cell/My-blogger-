@@ -160,16 +160,14 @@
   <script src="https://www.youtube.com/iframe_api"></script>
   
   <script>
-    // --- कन्फिगरेसन: यहाँ आफ्नो ब्लगको सही नाम मात्र राख्नुहोस् ---
-    // (यसले अन्तिमको / स्वतः हटाउनेछ ताकि API नबिग्रियोस्)
-    const BLOG_BASE = "https://kgeet.blogspot.com"; 
-    const BLOG_URL = BLOG_BASE.replace(/\/$/, ""); 
+    const BLOG_URL = "https://kgeet.blogspot.com"; 
     
     let ytPlayer = null;
-    let currentNextPageToken = "";
+    let currentStartIndex = 1;
     let activeCategory = "";
     let activeSearchQuery = "";
     let activeVideoDataGlobal = { id: "", title: "", desc: "" };
+    let isAppendModeGlobal = false;
     const MAX_DOM_CARDS = 30;
 
     function playTargetYouTubeVideo(id, title, description, channel, views) {
@@ -193,8 +191,9 @@
       document.getElementById('feed-scroll-container').scrollTop = 0;
     }
 
-    // ब्याकइन्ड फिड तान्ने अपडेटेड इन्जिन (CORS र JSON सुरक्षित)
+    // ब्लगस्पट JSONP डाटा लोड गर्ने नयाँ सुरक्षित फङ्सन
     function fetchBloggerDataAPI(isAppendMode = false) {
+      isAppendModeGlobal = isAppendMode;
       const loader = document.getElementById('main-feed-loader');
       const grid = document.getElementById('songs-render-grid');
       const moreBtn = document.getElementById('load-more-btn-trigger');
@@ -202,124 +201,105 @@
       if(!isAppendMode) {
         loader.style.display = 'block';
         grid.style.opacity = '0.3';
+        currentStartIndex = 1;
       } else {
         moreBtn.innerHTML = "<span>⏳</span>Loading...";
       }
 
+      // JSONP को लागि युआरएल तयार गर्ने
       let fetchUrl = `${BLOG_URL}/feeds/posts/default`;
       if(activeCategory) {
         fetchUrl += `/-/${encodeURIComponent(activeCategory)}`;
       }
-      fetchUrl += `?alt=json&max-results=15`;
+      fetchUrl += `?alt=json-in-script&callback=parseBloggerResponse&max-results=15&start-index=${currentStartIndex}`;
+      
       if(activeSearchQuery) {
         fetchUrl += `&q=${encodeURIComponent(activeSearchQuery)}`;
       }
-      if(isAppendMode && currentNextPageToken) {
-        fetchUrl += `&start-index=${currentNextPageToken}`;
-      }
 
-      // JSONP झन्झट हटाउन डाइरेक्ट JSON फेच (सुरक्षित मोड)
-      fetch(fetchUrl, { method: 'GET', mode: 'cors' })
-        .then(res => {
-          if (!res.ok) throw new Error('Network error or CORS block');
-          return res.json();
-        })
-        .then(data => {
-          loader.style.display = 'none';
-          grid.style.opacity = '1';
-          
-          if(!isAppendMode) grid.innerHTML = "";
-          
-          const entries = data.feed.entry;
-          if(entries && entries.length > 0) {
-            let currentCount = grid.querySelectorAll('.video-card').length;
-            currentNextPageToken = currentCount + entries.length + 1;
+      // पुरानो स्क्रिप्ट हटाएर नयाँ स्क्रिप्ट ट्याग थप्ने (CORS बाइपास गर्न)
+      const oldScript = document.getElementById('blogger-jsonp-script');
+      if(oldScript) oldScript.remove();
 
-            entries.forEach(entry => {
-              const title = entry.title ? entry.title.$t : "Untitled";
-              
-              // ब्लगरको फिड कहिले content त कहिले summary मा बस्ने हुनाले दुवै चेक गरियो
-              let contentHtml = "";
-              if(entry.content) contentHtml = entry.content.$t;
-              else if(entry.summary) contentHtml = entry.summary.$t;
-              
-              let videoId = "", channel = "Official", views = "100K views", songDescription = contentHtml;
-              
-              // JSON पार्सर म्याचिङ
-              try {
-                const jsonMatch = contentHtml.match(/\{[\s\S]*?\}/);
-                if(jsonMatch) {
-                  const parsed = JSON.parse(jsonMatch[0]);
-                  videoId = parsed.id || "";
-                  channel = parsed.channel || "Official";
-                  views = parsed.views || "100K views";
-                  songDescription = contentHtml.replace(/\{[\s\S]*?\}/g, '').replace(/<[^>]*>/g, '').trim();
-                } else {
-                  // यदि भित्र JSON कोड छैन भने बडीमा भएको पहिलो युट्युब लिङ्क खोज्ने ब्याकअप जुक्ति
-                  const ytMatch = contentHtml.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\s>]+)/);
-                  if(ytMatch && ytMatch[1]) videoId = ytMatch[1].trim();
-                }
-              } catch(e) { 
-                console.log("JSON parsing fallback activated"); 
-              }
-
-              // यदि भिडियो आईडी फेला परेन भने ब्लगरको थम्बनेल ब्याकअप प्रयोग गर्ने
-              let thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-              if(!videoId) {
-                if(entry.media$thumbnail) thumbUrl = entry.media$thumbnail.url;
-                else return; // थम्बनेल पनि नभए कार्ड नबनाउने
-              }
-
-              const card = document.createElement('div');
-              card.className = "video-card";
-              card.innerHTML = `
-                <div class="thumbnail-wrapper">
-                  <img src="${thumbUrl}" alt="Thumbnail" onerror="this.src='https://lh3.googleusercontent.com/-H8g6vS77Z4Y/W2vX-M7Fm_I/AAAAAAAABpE/9PszG18pY_snwAok_6fHlJkY0M-THeLgACLcBGAs/s1600/default-thumb.jpg'">
-                </div>
-                <div class="video-details">
-                  <div class="channel-avatar"><span>${channel.charAt(0).toUpperCase()}</span></div>
-                  <div class="meta-data">
-                    <h3 class="video-title">${title}</h3>
-                    <div class="video-info"><span>@${channel}</span>•<span>${views}</span></div>
-                  </div>
-                </div>
-              `;
-
-              card.addEventListener('click', () => {
-                // यदि आईडी सिधै भेटिएन भने ब्याकअप आइडी पठाउने
-                let finalId = videoId || "dQw4w9WgXcQ"; 
-                playTargetYouTubeVideo(finalId, title, songDescription, channel, views);
-              });
-
-              grid.appendChild(card);
-            });
-
-            if(isAppendMode) {
-              const allCurrentCards = grid.querySelectorAll('.video-card');
-              if(allCurrentCards.length > MAX_DOM_CARDS) {
-                const removeCount = allCurrentCards.length - MAX_DOM_CARDS;
-                for(let i=0; i<removeCount; i++) { allCurrentCards[i].remove(); }
-              }
-            }
-
-            moreBtn.innerHTML = "<span>🎞️</span>More Videos";
-            moreBtn.classList.remove('disabled-link');
-          } else {
-            if(!isAppendMode) grid.innerHTML = "<div style='padding:50px; text-align:center; color:#aaa;'>❌ No videos found matching criteria.</div>";
-            moreBtn.innerHTML = "<span>🚫</span>No More Videos";
-            moreBtn.classList.add('disabled-link');
-          }
-        })
-        .catch(err => {
-          loader.style.display = 'none';
-          grid.style.opacity = '1';
-          moreBtn.innerHTML = "<span>🎞️</span>More Videos";
-          grid.innerHTML = `<div style='padding:50px; text-align:center; color:#ff4444;'>⚠️ Data Blocked! Please upload this file to GitHub Pages or Netlify to make it work.</div>`;
-          console.error("API error captured: ", err);
-        });
+      const script = document.createElement('script');
+      script.id = 'blogger-jsonp-script';
+      script.src = fetchUrl;
+      document.body.appendChild(script);
     }
 
-    // DOM र UI Events कन्ट्रोलर
+    // JSONP रेस्पोन्स ह्यान्डलर (गिटहबमा यसले डाटा देखाउँछ)
+    window.parseBloggerResponse = function(data) {
+      const loader = document.getElementById('main-feed-loader');
+      const grid = document.getElementById('songs-render-grid');
+      const moreBtn = document.getElementById('load-more-btn-trigger');
+
+      loader.style.display = 'none';
+      grid.style.opacity = '1';
+      
+      if(!isAppendModeGlobal) grid.innerHTML = "";
+      
+      const entries = data.feed.entry;
+      if(entries && entries.length > 0) {
+        currentStartIndex += entries.length;
+
+        entries.forEach(entry => {
+          const title = entry.title.$t;
+          const contentHtml = entry.content ? entry.content.$t : "";
+          
+          let videoId = "", channel = "Official", views = "100K views", songDescription = contentHtml;
+          
+          try {
+            const jsonMatch = contentHtml.match(/\{[\s\S]*?\}/);
+            if(jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              videoId = parsed.id || "";
+              channel = parsed.channel || "Official";
+              views = parsed.views || "100K views";
+              songDescription = contentHtml.replace(/\{[\s\S]*?\}/g, '').replace(/<[^>]*>/g, '').trim();
+            }
+          } catch(e) { console.log("JSON parsing skipped"); }
+
+          if(!videoId) return;
+
+          const card = document.createElement('div');
+          card.className = "video-card";
+          card.innerHTML = `
+            <div class="thumbnail-wrapper">
+              <img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" alt="Thumbnail">
+            </div>
+            <div class="video-details">
+              <div class="channel-avatar"><span>${channel.charAt(0).toUpperCase()}</span></div>
+              <div class="meta-data">
+                <h3 class="video-title">${title}</h3>
+                <div class="video-info"><span>@${channel}</span>•<span>${views}</span></div>
+              </div>
+            </div>
+          `;
+
+          card.addEventListener('click', () => {
+            playTargetYouTubeVideo(videoId, title, songDescription, channel, views);
+          });
+
+          grid.appendChild(card);
+        });
+
+        if(isAppendModeGlobal) {
+          const allCurrentCards = grid.querySelectorAll('.video-card');
+          if(allCurrentCards.length > MAX_DOM_CARDS) {
+            const removeCount = allCurrentCards.length - MAX_DOM_CARDS;
+            for(let i=0; i<removeCount; i++) { allCurrentCards[i].remove(); }
+          }
+        }
+
+        moreBtn.innerHTML = "<span>🎞️</span>More Videos";
+        moreBtn.classList.remove('disabled-link');
+      } else {
+        if(!isAppendModeGlobal) grid.innerHTML = "<div style='padding:50px; text-align:center; color:#aaa;'>❌ No videos found matching criteria.</div>";
+        moreBtn.innerHTML = "<span>🚫</span>No More Videos";
+        moreBtn.classList.add('disabled-link');
+      }
+    };
+
     document.addEventListener("DOMContentLoaded", () => {
       fetchBloggerDataAPI(); 
 
@@ -330,7 +310,6 @@
           tag.classList.add('active');
           activeCategory = tag.getAttribute('data-category');
           activeSearchQuery = ""; 
-          currentNextPageToken = "";
           fetchBloggerDataAPI();
         });
       });
@@ -339,7 +318,6 @@
         e.preventDefault();
         activeSearchQuery = document.getElementById('search-raw-input').value.trim();
         activeCategory = ""; 
-        currentNextPageToken = "";
         document.getElementById('search-box-holder').classList.remove('active');
         fetchBloggerDataAPI();
       });
@@ -349,15 +327,15 @@
       });
 
       document.getElementById('nav-home-btn').addEventListener('click', () => {
-        activeCategory = ""; activeSearchQuery = ""; currentNextPageToken = "";
+        activeCategory = ""; activeSearchQuery = "";
         fetchBloggerDataAPI();
       });
       document.getElementById('nav-trending-btn').addEventListener('click', () => {
-        activeCategory = "Trending"; activeSearchQuery = ""; currentNextPageToken = "";
+        activeCategory = "Trending"; activeSearchQuery = "";
         fetchBloggerDataAPI();
       });
       document.getElementById('logo-home-btn').addEventListener('click', () => {
-        activeCategory = ""; activeSearchQuery = ""; currentNextPageToken = "";
+        activeCategory = ""; activeSearchQuery = "";
         fetchBloggerDataAPI();
       });
 
