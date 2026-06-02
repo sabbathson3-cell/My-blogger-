@@ -160,8 +160,10 @@
   <script src="https://www.youtube.com/iframe_api"></script>
   
   <script>
-    // --- कन्फिगरेसन: यहाँ आफ्नो ब्लगस्पटको युआरएल मात्र राख्नुहोस् ---
-    const BLOG_URL = "https://kgeet.blogspot.com"; 
+    // --- कन्फिगरेसन: यहाँ आफ्नो ब्लगको सही नाम मात्र राख्नुहोस् ---
+    // (यसले अन्तिमको / स्वतः हटाउनेछ ताकि API नबिग्रियोस्)
+    const BLOG_BASE = "https://kgeet.blogspot.com"; 
+    const BLOG_URL = BLOG_BASE.replace(/\/$/, ""); 
     
     let ytPlayer = null;
     let currentNextPageToken = "";
@@ -170,7 +172,6 @@
     let activeVideoDataGlobal = { id: "", title: "", desc: "" };
     const MAX_DOM_CARDS = 30;
 
-    // युट्युब प्लेयर सेट गर्ने कोर फङ्सन
     function playTargetYouTubeVideo(id, title, description, channel, views) {
       activeVideoDataGlobal = { id: id, title: title, desc: description };
       document.getElementById('master-player-pack').style.display = 'block';
@@ -192,7 +193,7 @@
       document.getElementById('feed-scroll-container').scrollTop = 0;
     }
 
-    // ब्लगस्पटको JSON फिड फ्याक्ट्री (डाटा तान्ने इन्जिन)
+    // ब्याकइन्ड फिड तान्ने अपडेटेड इन्जिन (CORS र JSON सुरक्षित)
     function fetchBloggerDataAPI(isAppendMode = false) {
       const loader = document.getElementById('main-feed-loader');
       const grid = document.getElementById('songs-render-grid');
@@ -205,7 +206,6 @@
         moreBtn.innerHTML = "<span>⏳</span>Loading...";
       }
 
-      // युआरएल निर्माण (क्याटेगोरी, सर्च वा नार्मल फिड)
       let fetchUrl = `${BLOG_URL}/feeds/posts/default`;
       if(activeCategory) {
         fetchUrl += `/-/${encodeURIComponent(activeCategory)}`;
@@ -218,8 +218,12 @@
         fetchUrl += `&start-index=${currentNextPageToken}`;
       }
 
-      fetch(fetchUrl)
-        .then(res => res.json())
+      // JSONP झन्झट हटाउन डाइरेक्ट JSON फेच (सुरक्षित मोड)
+      fetch(fetchUrl, { method: 'GET', mode: 'cors' })
+        .then(res => {
+          if (!res.ok) throw new Error('Network error or CORS block');
+          return res.json();
+        })
         .then(data => {
           loader.style.display = 'none';
           grid.style.opacity = '1';
@@ -228,17 +232,20 @@
           
           const entries = data.feed.entry;
           if(entries && entries.length > 0) {
-            // अर्को पेजका लागि टोकन सेट गर्ने
             let currentCount = grid.querySelectorAll('.video-card').length;
             currentNextPageToken = currentCount + entries.length + 1;
 
             entries.forEach(entry => {
-              const title = entry.title.$t;
-              const contentHtml = entry.content ? entry.content.$t : "";
+              const title = entry.title ? entry.title.$t : "Untitled";
               
-              let videoId = "", channel = "Official", views = "100K views", likes = "0", songDescription = contentHtml;
+              // ब्लगरको फिड कहिले content त कहिले summary मा बस्ने हुनाले दुवै चेक गरियो
+              let contentHtml = "";
+              if(entry.content) contentHtml = entry.content.$t;
+              else if(entry.summary) contentHtml = entry.summary.$t;
               
-              // हाम्रो स्पेशल JSON ढाँचा पार्स गर्ने
+              let videoId = "", channel = "Official", views = "100K views", songDescription = contentHtml;
+              
+              // JSON पार्सर म्याचिङ
               try {
                 const jsonMatch = contentHtml.match(/\{[\s\S]*?\}/);
                 if(jsonMatch) {
@@ -247,17 +254,27 @@
                   channel = parsed.channel || "Official";
                   views = parsed.views || "100K views";
                   songDescription = contentHtml.replace(/\{[\s\S]*?\}/g, '').replace(/<[^>]*>/g, '').trim();
+                } else {
+                  // यदि भित्र JSON कोड छैन भने बडीमा भएको पहिलो युट्युब लिङ्क खोज्ने ब्याकअप जुक्ति
+                  const ytMatch = contentHtml.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\s>]+)/);
+                  if(ytMatch && ytMatch[1]) videoId = ytMatch[1].trim();
                 }
-              } catch(e) { console.log("JSON parsing skipped for card setup"); }
+              } catch(e) { 
+                console.log("JSON parsing fallback activated"); 
+              }
 
-              if(!videoId) return; // यदि युट्युब आइडी छैन भने कार्ड नबनाउने
+              // यदि भिडियो आईडी फेला परेन भने ब्लगरको थम्बनेल ब्याकअप प्रयोग गर्ने
+              let thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+              if(!videoId) {
+                if(entry.media$thumbnail) thumbUrl = entry.media$thumbnail.url;
+                else return; // थम्बनेल पनि नभए कार्ड नबनाउने
+              }
 
-              // कार्ड नोड सिर्जना गर्ने
               const card = document.createElement('div');
               card.className = "video-card";
               card.innerHTML = `
                 <div class="thumbnail-wrapper">
-                  <img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" alt="Thumbnail">
+                  <img src="${thumbUrl}" alt="Thumbnail" onerror="this.src='https://lh3.googleusercontent.com/-H8g6vS77Z4Y/W2vX-M7Fm_I/AAAAAAAABpE/9PszG18pY_snwAok_6fHlJkY0M-THeLgACLcBGAs/s1600/default-thumb.jpg'">
                 </div>
                 <div class="video-details">
                   <div class="channel-avatar"><span>${channel.charAt(0).toUpperCase()}</span></div>
@@ -268,15 +285,15 @@
                 </div>
               `;
 
-              // क्लिक गर्दा बिना रिलोड गीत बज्ने
               card.addEventListener('click', () => {
-                playTargetYouTubeVideo(videoId, title, songDescription, channel, views);
+                // यदि आईडी सिधै भेटिएन भने ब्याकअप आइडी पठाउने
+                let finalId = videoId || "dQw4w9WgXcQ"; 
+                playTargetYouTubeVideo(finalId, title, songDescription, channel, views);
               });
 
               grid.appendChild(card);
             });
 
-            // ३० वटा कार्डको कडा नियम (मेमोरी क्लिन-अप)
             if(isAppendMode) {
               const allCurrentCards = grid.querySelectorAll('.video-card');
               if(allCurrentCards.length > MAX_DOM_CARDS) {
@@ -297,43 +314,40 @@
           loader.style.display = 'none';
           grid.style.opacity = '1';
           moreBtn.innerHTML = "<span>🎞️</span>More Videos";
+          grid.innerHTML = `<div style='padding:50px; text-align:center; color:#ff4444;'>⚠️ Data Blocked! Please upload this file to GitHub Pages or Netlify to make it work.</div>`;
           console.error("API error captured: ", err);
         });
     }
 
-    // डोम कन्ट्रोलर्स र एप्लिकेसन ईभेन्ट्स
+    // DOM र UI Events कन्ट्रोलर
     document.addEventListener("DOMContentLoaded", () => {
-      fetchBloggerDataAPI(); // सुरुमा होमपेज डेटा तान्ने
+      fetchBloggerDataAPI(); 
 
-      // १. टप क्याटेगोरी फिल्टर एजेक्स कमाण्ड
       const tags = document.querySelectorAll('.cat-ajax-link');
       tags.forEach(tag => {
         tag.addEventListener('click', () => {
           tags.forEach(t => t.classList.remove('active'));
           tag.classList.add('active');
           activeCategory = tag.getAttribute('data-category');
-          activeSearchQuery = ""; // क्याटेगोरी थिच्दा पुराना सर्च हटाउने
+          activeSearchQuery = ""; 
           currentNextPageToken = "";
           fetchBloggerDataAPI();
         });
       });
 
-      // २. सर्च बार सबमिट ह्यान्डलर (बिना रिलोड)
       document.getElementById('app-search-form').addEventListener('submit', (e) => {
         e.preventDefault();
         activeSearchQuery = document.getElementById('search-raw-input').value.trim();
-        activeCategory = ""; // सर्च गर्दा क्याटेगोरी फिल्टर हटाउने
+        activeCategory = ""; 
         currentNextPageToken = "";
         document.getElementById('search-box-holder').classList.remove('active');
         fetchBloggerDataAPI();
       });
 
-      // ३. बटम नेभिगेसन "More Videos" पेजिनेसन ट्रिगर
       document.getElementById('load-more-btn-trigger').addEventListener('click', () => {
         fetchBloggerDataAPI(true);
       });
 
-      // होम र ट्रेन्डिङ बटम बटन कमाण्ड
       document.getElementById('nav-home-btn').addEventListener('click', () => {
         activeCategory = ""; activeSearchQuery = ""; currentNextPageToken = "";
         fetchBloggerDataAPI();
@@ -347,7 +361,6 @@
         fetchBloggerDataAPI();
       });
 
-      // UI प्यानल कन्ट्रोलरहरू (ढोका खोल्ने र बन्द गर्नेहरू)
       const overlay = document.getElementById('global-overlay');
       const drawer = document.getElementById('lyrics-drawer');
 
@@ -358,7 +371,6 @@
       document.getElementById('open-search-btn').addEventListener('click', () => document.getElementById('search-box-holder').classList.add('active'));
       document.getElementById('close-search-btn').addEventListener('click', () => document.getElementById('search-box-holder').classList.remove('active'));
 
-      // सेयर र डाउनलोड बटन प्रणाली
       document.getElementById('share-app-btn').addEventListener('click', () => {
         if(navigator.share && activeVideoDataGlobal.id) {
           navigator.share({ title: activeVideoDataGlobal.title, url: `https://youtu.be/${activeVideoDataGlobal.id}` });
