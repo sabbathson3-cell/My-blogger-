@@ -2,88 +2,247 @@
 <html lang="ne">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VideoPlus Pro - Music App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Premium Secure Player</title>
   <style>
-    :root { --accent: #ff0000; --bg: #0f0f0f; --text: #ffffff; }
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-    body { background: var(--bg); color: var(--text); }
-    .header { padding: 15px; font-weight: bold; font-size: 20px; border-bottom: 1px solid #222; }
-    .player-section { position: sticky; top: 0; z-index: 10; background: #000; }
-    .video-ratio { position: relative; width: 100%; padding-top: 56.25%; }
-    .video-ratio #yt-player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-    .meta { padding: 15px; }
-    .meta h2 { font-size: 16px; margin-bottom: 10px; }
-    .btn-share { background: #333; color: #fff; padding: 8px 15px; border-radius: 20px; border: none; cursor: pointer; }
-    .feed { padding: 10px; }
-    .card { display: flex; gap: 10px; margin-bottom: 15px; cursor: pointer; }
-    .thumb { width: 120px; height: 68px; background: #222; border-radius: 8px; }
-    .loader { text-align: center; padding: 20px; color: #888; }
+    /* Reset & Dark Theme */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+    body { background-color: #0f0f0f; color: #ffffff; overflow: hidden; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+
+    /* Top Header Bar */
+    .header-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #0f0f0f; border-bottom: 1px solid #272727; flex-shrink: 0; height: 50px; }
+    .logo-text { font-size: 18px; font-weight: bold; }
+    .logo-text span { background: #ff0000; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #fff; margin-left: 5px; }
+
+    /* STICKY PLAYER PACK CONTAINER */
+    .sticky-player-pack { display: none; position: sticky; top: 0; left: 0; width: 100%; background: #0f0f0f; z-index: 90; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    
+    /* प्लेयर बक्स र मास्क ट्रिक */
+    .player-container { width: 100%; background: #000000; position: relative; aspect-ratio: 16/9; overflow: hidden; }
+    .player-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+    
+    /* 🧠 100% WORKING TRICK: युट्युबको लिङ्क र लोगो लुकाउने मास्क */
+    .player-shield-mask { 
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0,0,0,0); /* पारदर्शी */
+      z-index: 10; 
+      pointer-events: auto; /* यसले युट्युब माथिको क्लिक सबै ब्लक गर्छ */
+    }
+
+    /* PLAYER META DETAILS */
+    .mini-meta-box { padding: 12px 16px; background: #0f0f0f; border-bottom: 1px solid #212121; }
+    .mini-title { font-size: 16px; font-weight: 700; color: #ffffff; line-height: 1.4; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta-line-two { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #aaa; }
+    .meta-channel-name { color: #fff; font-weight: 600; }
+    
+    /* Custom Control Buttons (कस्टम बटनहरू) */
+    .custom-player-controls { display: flex; justify-content: center; align-items: center; gap: 24px; padding: 10px; background: #141414; border-bottom: 1px solid #272727; }
+    .ctrl-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 5px 15px; }
+    .lyrics-trigger-btn { background: #272727; color: #3ea6ff; border: 1px solid #3f3f3f; padding: 6px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; font-weight: bold; }
+
+    /* Main Scroll Area */
+    .main-scroll-content { flex-grow: 1; overflow-y: auto; padding-bottom: 40px; }
+    
+    /* Category Badges */
+    .filter-tags { display: flex; gap: 8px; overflow-x: auto; padding: 12px; background: #0f0f0f; position: sticky; top: 0; z-index: 50; }
+    .cat-link { display: inline-block; background: #272727; padding: 6px 14px; border-radius: 8px; font-size: 14px; color: #fff; cursor: pointer; white-space: nowrap; }
+    .cat-link.active { background: #ffffff; color: #0f0f0f; font-weight: bold; }
+
+    /* Video Cards List */
+    .video-card { margin-bottom: 20px; display: flex; flex-direction: column; background: #0f0f0f; cursor: pointer; }
+    .thumbnail-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; background: #111; overflow: hidden; }
+    .thumbnail-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+    .video-details { display: flex; padding: 12px 14px 4px 14px; gap: 12px; }
+    .channel-avatar { width: 36px; height: 36px; border-radius: 50%; background: #272727; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: #ff0000; flex-shrink: 0; }
+    .meta-data { flex-grow: 1; min-width: 0; }
+    .video-title { font-size: 14px; font-weight: 500; color: #f1f1f1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* LYRICS DRAWER */
+    .desc-drawer-box { display: none; position: fixed; bottom: -100%; left: 0; width: 100%; height: 65vh; background: #0f0f0f; border-radius: 16px 16px 0 0; z-index: 1000; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); transition: bottom 0.3s ease; flex-direction: column; border-top: 1px solid #272727; }
+    .desc-drawer-box.open { display: flex; bottom: 0; }
+    .desc-drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #212121; }
+    .desc-drawer-close { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; }
+    .desc-drawer-body { flex-grow: 1; overflow-y: auto; padding: 16px; }
+    .desc-main-text-block { background: #161616; border-radius: 12px; padding: 16px; color: #f1f1f1; font-size: 15px; line-height: 1.8; white-space: pre-wrap; text-align: center; }
+
+    .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 500; display: none; }
+    .menu-overlay.active { display: block; }
   </style>
 </head>
 <body>
 
-  <header class="header">VideoPlus Pro</header>
+  <header class="header-bar">
+    <div class="logo-text">GeetTube<span>NATIVE</span></div>
+  </header>
 
-  <div class="player-section" id="player-box" style="display:none;">
-    <div class="video-ratio"><div id="yt-player"></div></div>
-    <div class="meta">
-      <h2 id="video-title">Title</h2>
-      <button class="btn-share" onclick="shareVideo()">🔗 Share Video</button>
+  <div class="menu-overlay" id="global-overlay"></div>
+
+  <div class="sticky-player-pack" id="master-player-pack">
+    <div class="player-container">
+      <div id="yt-secure-iframe-target"></div>
+      
+      <div class="player-shield-mask" id="player-click-blocker"></div>
+    </div>
+    
+    <div class="custom-player-controls">
+      <button class="ctrl-btn" id="custom-play-pause-btn">⏸️ Pause</button>
+    </div>
+
+    <div class="mini-meta-box">
+      <h1 class="mini-title" id="player-title">Loading...</h1>
+      <div class="meta-line-two">
+        <span class="meta-channel-name" id="player-channel">@Channel</span>
+        <button class="lyrics-trigger-btn" id="open-lyrics-btn">🎵 Lyrics</button>
+      </div>
     </div>
   </div>
 
-  <main class="feed" id="video-grid"></main>
-  <div class="loader" id="loader">Loading...</div>
+  <div class="desc-drawer-box" id="lyrics-drawer">
+    <div class="desc-drawer-header">
+      <h2 id="drawer-song-title">Lyrics</h2>
+      <button class="desc-drawer-close" id="close-lyrics-btn">✕</button>
+    </div>
+    <div class="desc-drawer-body">
+      <div class="desc-main-text-block" id="lyrics-body-text">Loading...</div>
+    </div>
+  </div>
+
+  <main class="main-scroll-content" id="scroll-holder">
+    <div class="filter-tags" id="category-bar">
+      <span class="cat-link active" data-cat="">All</span>
+      <span class="cat-link" data-cat="Music">Music</span>
+      <span class="cat-link" data-cat="Lyrics">Lyrics</span>
+    </div>
+    <div class="video-feed" id="native-render-grid"></div>
+  </main>
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    let player;
-    let currentId = "";
-    
-    function playVideo(id, title) {
-      currentId = id;
-      document.getElementById('player-box').style.display = 'block';
-      document.getElementById('video-title').innerText = title;
+    const JSON_URL = "https://gist.githubusercontent.com/sabbathson3-cell/efb6581982c84c88e4f0c2923b7f704c/raw/songs.json"; 
 
-      if (!player) {
-        player = new YT.Player('yt-player', {
-          host: 'https://www.youtube-nocookie.com',
-          videoId: id,
-          playerVars: { 'autoplay': 1, 'modestbranding': 1 }
-        });
-      } else {
-        player.loadVideoById(id);
+    let localSongsDatabase = [];
+    let selectedCategory = "";
+    let ytPlayerInstance = null;
+    let isVideoPlaying = false;
+
+    async function loadNativeDatabase() {
+      const grid = document.getElementById('native-render-grid');
+      grid.innerHTML = "<div style='padding:40px; text-align:center; color:#aaa;'>⏳ गीतहरू लोड हुँदैछन्...</div>";
+
+      try {
+        const response = await fetch(JSON_URL);
+        localSongsDatabase = await response.json();
+        renderSongsFeed();
+      } catch (error) {
+        grid.innerHTML = "<div style='padding:40px; text-align:center; color:#aaa;'>❌ डेटा लोड हुन सकेन।</div>";
       }
-      window.scrollTo(0, 0);
     }
 
-    function shareVideo() {
-      if(navigator.share) navigator.share({title: 'Watch', url: 'https://youtu.be/' + currentId});
-      else alert('Link: https://youtu.be/' + currentId);
-    }
+    function renderSongsFeed() {
+      const grid = document.getElementById('native-render-grid');
+      grid.innerHTML = "";
 
-    // JSONP बाट डाटा तान्ने
-    const script = document.createElement('script');
-    script.src = "https://kgeet.blogspot.com/feeds/posts/default?alt=json-in-script&callback=onDataLoaded";
-    document.body.appendChild(script);
+      const filtered = localSongsDatabase.filter(song => !selectedCategory || song.category === selectedCategory);
 
-    window.onDataLoaded = (data) => {
-      document.getElementById('loader').style.display = 'none';
-      const grid = document.getElementById('video-grid');
-      data.feed.entry.forEach(entry => {
-        const title = entry.title.$t;
-        const jsonMatch = entry.content.$t.match(/\{[\s\S]*?\}/);
-        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
-        if(!parsed.id) return;
-
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `<img src="https://img.youtube.com/vi/${parsed.id}/mqdefault.jpg" class="thumb"><div class="info"><h3>${title}</h3></div>`;
-        div.onclick = () => playVideo(parsed.id, title);
-        grid.appendChild(div);
+      filtered.forEach(song => {
+        const card = document.createElement('div');
+        card.className = "video-card";
+        const channelName = song.channel || "Official";
+        card.innerHTML = `
+          <div class="thumbnail-wrapper">
+            <img src="https://img.youtube.com/vi/${song.id}/mqdefault.jpg" alt="Thumbnail">
+          </div>
+          <div class="video-details">
+            <div class="channel-avatar"><span>${channelName.charAt(0).toUpperCase()}</span></div>
+            <div class="meta-data">
+              <h3 class="video-title">${song.title || 'Untitled Video'}</h3>
+              <div class="video-info"><span>@${channelName}</span></div>
+            </div>
+          </div>
+        `;
+        card.addEventListener('click', () => fireOfficialSecurePlayer(song));
+        grid.appendChild(card);
       });
-    };
+    }
+
+    // 🚀 आधिकारिक युट्युब इन्जिन चलाउने तर लिङ्क ब्लक गर्ने फङ्क्सन
+    function fireOfficialSecurePlayer(song) {
+      document.getElementById('master-player-pack').style.display = 'block';
+      document.getElementById('player-title').innerText = song.title;
+      document.getElementById('player-channel').innerText = "@" + (song.channel || "Official");
+      document.getElementById('drawer-song-title').innerText = song.title;
+      document.getElementById('lyrics-body-text').innerText = song.lyrics || "यो गीतको लिरिक्स उपलब्ध छैन।";
+
+      const btn = document.getElementById('custom-play-pause-btn');
+      btn.innerText = "⏸️ Pause";
+      isVideoPlaying = true;
+
+      const target = document.getElementById('master-player-pack');
+      const iframeSlot = document.getElementById('yt-secure-iframe-target');
+      iframeSlot.innerHTML = ""; 
+
+      if(ytPlayerInstance && ytPlayerInstance.destroy) { try { ytPlayerInstance.destroy(); } catch(e){} }
+
+      // आधिकारिक र सुरक्षित तरिका (यो कहिल्यै ब्लक हुँदैन)
+      ytPlayerInstance = new YT.Player('yt-secure-iframe-target', {
+        width: '100%',
+        height: '100%',
+        videoId: song.id,
+        playerVars: { 
+          'autoplay': 1, 
+          'controls': 0,      /* युट्युबको बटनहरू हटाउने */
+          'rel': 0, 
+          'modestbranding': 1, /* युट्युब लोगो कम गर्ने */
+          'showinfo': 0,
+          'iv_load_policy': 3
+        }
+      });
+
+      document.getElementById('scroll-holder').scrollTop = 0;
+    }
+
+    // कस्टम प्ले-पज कन्ट्रोलर
+    function handlePlaybackToggle() {
+      if(!ytPlayerInstance) return;
+      const btn = document.getElementById('custom-play-pause-btn');
+      if(isVideoPlaying) {
+        ytPlayerInstance.pauseVideo();
+        btn.innerText = "▶️ Play";
+        isVideoPlaying = false;
+      } else {
+        ytPlayerInstance.playVideo();
+        btn.innerText = "⏸️ Pause";
+        isVideoPlaying = true;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadNativeDatabase();
+
+      document.getElementById('custom-play-pause-btn').addEventListener('click', handlePlaybackToggle);
+
+      // मास्क लेयरमा थिच्दा पनि भिडियो प्ले/पज हुने बनाउने
+      document.getElementById('player-click-blocker').addEventListener('click', handlePlaybackToggle);
+
+      // क्याटेगोरी फिल्टर
+      const tags = document.querySelectorAll('.cat-link');
+      tags.forEach(tag => {
+        tag.addEventListener('click', () => {
+          tags.forEach(t => t.classList.remove('active'));
+          tag.classList.add('active');
+          selectedCategory = tag.getAttribute('data-cat');
+          renderSongsFeed();
+        });
+      });
+
+      // लिरिक्स कन्ट्रोल
+      const overlay = document.getElementById('global-overlay');
+      const drawer = document.getElementById('lyrics-drawer');
+
+      document.getElementById('open-lyrics-btn').addEventListener('click', () => { drawer.classList.add('open'); overlay.classList.add('active'); });
+      document.getElementById('close-lyrics-btn').addEventListener('click', () => { drawer.classList.remove('open'); overlay.classList.remove('active'); });
+      overlay.addEventListener('click', () => { drawer.classList.remove('open'); overlay.classList.remove('active'); });
+    });
   </script>
 </body>
 </html>
