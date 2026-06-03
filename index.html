@@ -2,80 +2,88 @@
 <html lang="ne">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>VideoPlus - SPA Music App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VideoPlus Pro - Music App</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
-    body { background-color: #0f0f0f; color: #ffffff; height: 100vh; display: flex; flex-direction: column; }
-    .header-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #0f0f0f; border-bottom: 1px solid #272727; }
-    .sticky-player-pack { display: none; width: 100%; background: #000; }
-    .player-ratio-box { position: relative; width: 100%; padding-top: 56.25%; }
-    .player-ratio-box #yt-placeholder { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-    .main-scroll-content { flex-grow: 1; overflow-y: auto; padding: 10px; }
-    .video-card { margin-bottom: 20px; display: flex; cursor: pointer; }
-    .thumbnail { width: 120px; height: 68px; background: #222; flex-shrink: 0; }
-    .video-title { padding-left: 10px; font-size: 14px; }
+    :root { --accent: #ff0000; --bg: #0f0f0f; --text: #ffffff; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body { background: var(--bg); color: var(--text); }
+    .header { padding: 15px; font-weight: bold; font-size: 20px; border-bottom: 1px solid #222; }
+    .player-section { position: sticky; top: 0; z-index: 10; background: #000; }
+    .video-ratio { position: relative; width: 100%; padding-top: 56.25%; }
+    .video-ratio #yt-player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .meta { padding: 15px; }
+    .meta h2 { font-size: 16px; margin-bottom: 10px; }
+    .btn-share { background: #333; color: #fff; padding: 8px 15px; border-radius: 20px; border: none; cursor: pointer; }
+    .feed { padding: 10px; }
+    .card { display: flex; gap: 10px; margin-bottom: 15px; cursor: pointer; }
+    .thumb { width: 120px; height: 68px; background: #222; border-radius: 8px; }
+    .loader { text-align: center; padding: 20px; color: #888; }
   </style>
 </head>
 <body>
 
-  <header class="header-bar">
-    <div id="logo-home-btn">VideoPlus</div>
-  </header>
+  <header class="header">VideoPlus Pro</header>
 
-  <div class="sticky-player-pack" id="master-player-pack">
-    <div class="player-container" id="player-target-iframe-box">
-      <div class="player-ratio-box"><div id="yt-placeholder"></div></div>
+  <div class="player-section" id="player-box" style="display:none;">
+    <div class="video-ratio"><div id="yt-player"></div></div>
+    <div class="meta">
+      <h2 id="video-title">Title</h2>
+      <button class="btn-share" onclick="shareVideo()">🔗 Share Video</button>
     </div>
-    <div style="padding: 10px;" id="player-title">Loading...</div>
   </div>
 
-  <main class="main-scroll-content" id="songs-render-grid"></main>
+  <main class="feed" id="video-grid"></main>
+  <div class="loader" id="loader">Loading...</div>
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    let ytPlayer = null;
-    const BLOG_URL = "https://kgeet.blogspot.com";
+    let player;
+    let currentId = "";
+    
+    function playVideo(id, title) {
+      currentId = id;
+      document.getElementById('player-box').style.display = 'block';
+      document.getElementById('video-title').innerText = title;
 
-    function playTargetYouTubeVideo(id, title) {
-      document.getElementById('master-player-pack').style.display = 'block';
-      document.getElementById('player-title').innerText = title;
-
-      const container = document.getElementById('player-target-iframe-box');
-      container.innerHTML = '<div class="player-ratio-box"><div id="yt-placeholder"></div></div>';
-
-      // youtube-nocookie प्रयोग गर्नाले धेरै जसो ट्रयाकर र विज्ञापन कम हुन्छन्
-      ytPlayer = new YT.Player('yt-placeholder', {
-        host: 'https://www.youtube-nocookie.com',
-        videoId: id,
-        playerVars: { 'autoplay': 1, 'rel': 0, 'modestbranding': 1, 'playsinline': 1 }
-      });
+      if (!player) {
+        player = new YT.Player('yt-player', {
+          host: 'https://www.youtube-nocookie.com',
+          videoId: id,
+          playerVars: { 'autoplay': 1, 'modestbranding': 1 }
+        });
+      } else {
+        player.loadVideoById(id);
+      }
+      window.scrollTo(0, 0);
     }
 
-    function fetchBloggerDataAPI() {
-      const script = document.createElement('script');
-      script.src = `${BLOG_URL}/feeds/posts/default?alt=json-in-script&callback=parseBloggerResponse&max-results=10`;
-      document.body.appendChild(script);
+    function shareVideo() {
+      if(navigator.share) navigator.share({title: 'Watch', url: 'https://youtu.be/' + currentId});
+      else alert('Link: https://youtu.be/' + currentId);
     }
 
-    window.parseBloggerResponse = function(data) {
-      const grid = document.getElementById('songs-render-grid');
+    // JSONP बाट डाटा तान्ने
+    const script = document.createElement('script');
+    script.src = "https://kgeet.blogspot.com/feeds/posts/default?alt=json-in-script&callback=onDataLoaded";
+    document.body.appendChild(script);
+
+    window.onDataLoaded = (data) => {
+      document.getElementById('loader').style.display = 'none';
+      const grid = document.getElementById('video-grid');
       data.feed.entry.forEach(entry => {
         const title = entry.title.$t;
-        const content = entry.content.$t;
-        const jsonMatch = content.match(/\{[\s\S]*?\}/);
+        const jsonMatch = entry.content.$t.match(/\{[\s\S]*?\}/);
         const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
         if(!parsed.id) return;
 
-        const card = document.createElement('div');
-        card.className = "video-card";
-        card.innerHTML = `<div class="thumbnail"><img src="https://img.youtube.com/vi/${parsed.id}/mqdefault.jpg" width="120" height="68"></div><div class="video-title">${title}</div>`;
-        card.onclick = () => playTargetYouTubeVideo(parsed.id, title);
-        grid.appendChild(card);
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `<img src="https://img.youtube.com/vi/${parsed.id}/mqdefault.jpg" class="thumb"><div class="info"><h3>${title}</h3></div>`;
+        div.onclick = () => playVideo(parsed.id, title);
+        grid.appendChild(div);
       });
     };
-
-    document.addEventListener("DOMContentLoaded", fetchBloggerDataAPI);
   </script>
 </body>
 </html>
