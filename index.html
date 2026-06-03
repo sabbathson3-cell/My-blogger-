@@ -6,360 +6,106 @@
   <title>VideoPlus - True SPA Music App</title>
   
   <style>
-    /* Reset & Base Styles */
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
     body { background-color: #0f0f0f; color: #ffffff; overflow: hidden; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
     a { color: inherit; text-decoration: none; }
-
-    /* Top Header Bar */
-    .header-bar { 
-      display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; 
-      background: #0f0f0f; border-bottom: 1px solid #272727; flex-shrink: 0; z-index: 10001; height: 50px; position: relative;
-    }
-    .header-left { display: flex; align-items: center; gap: 16px; }
-    .logo-text { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 4px; cursor: pointer; }
-    .logo-text span { background: #ff0000; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
-    
-    .header-right { display: flex; align-items: center; gap: 10px; }
-    .search-trigger-btn { font-size: 20px; background: none; border: none; color: #fff; cursor: pointer; padding: 4px; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #0f0f0f; border-bottom: 1px solid #272727; flex-shrink: 0; z-index: 10001; height: 50px; position: relative; }
+    .logo-text { font-size: 18px; font-weight: bold; cursor: pointer; }
     .search-box-container { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f0f0f; align-items: center; padding: 0 16px; z-index: 10002; }
     .search-box-container.active { display: flex; }
-    .search-form { display: flex; width: 100%; align-items: center; gap: 10px; }
-    .search-input { flex-grow: 1; background: #272727; border: 1px solid #3f3f3f; color: #fff; padding: 6px 14px; border-radius: 18px; font-size: 14px; outline: none; }
-    .search-close-btn { font-size: 20px; background: none; border: none; color: #aaa; cursor: pointer; }
-
-    /* STICKY PLAYER PACK CONTAINER */
-    .sticky-player-pack {
-      display: none; position: sticky; top: 0; left: 0; width: 100%; background: #0f0f0f; z-index: 9999; flex-shrink: 0;
-    }
-    .player-container { width: 100%; background: #000000; display: flex; flex-direction: column; overflow: hidden; }
-    .player-ratio-box { position: relative; width: 100%; height: 0; padding-top: 56.25%; background: #000; overflow: hidden; }
-    .player-ratio-box iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; object-fit: cover; }
-
-    /* PLAYER INFO */
-    .mini-meta-box { display: block; padding: 12px 16px 6px 16px; background: #0f0f0f; }
-    .mini-title { font-size: 17px; font-weight: 700; color: #ffffff; line-height: 1.3; text-align: left; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .meta-line-two { display: flex; align-items: center; font-size: 13px; color: #aaa; gap: 4px; width: 100%; margin-bottom: 8px; flex-wrap: wrap; }
-    .meta-channel-name { color: #ffffff; font-weight: 600; font-size: 13px; }
-    .more-trigger-btn { background: none; border: none; color: #3ea6ff; font-weight: bold; font-size: 13px; cursor: pointer; padding: 2px 4px; margin-left: 2px; }
-
-    /* Action Buttons Row */
-    .action-buttons-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 0 16px 12px 16px; background: #0f0f0f; border-bottom: 1px solid #212121; }
-    .action-buttons-row::-webkit-scrollbar { display: none; }
-    .action-btn { background: #272727; color: #ffffff; padding: 6px 14px; border-radius: 18px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; border: none; white-space: nowrap; cursor: pointer; }
-
-    /* DESCRIPTION DRAWER (LYRICS BOX) */
-    .desc-drawer-box { display: none; position: fixed; bottom: -100%; left: 0; width: 100%; height: 70vh; background: #0f0f0f; border-radius: 16px 16px 0 0; z-index: 10005; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); transition: bottom 0.28s cubic-bezier(0, 0, 0.2, 1); flex-direction: column; border-top: 1px solid #272727; }
-    .desc-drawer-box.open { display: flex; bottom: 0; }
-    .desc-drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid #212121; position: relative; }
-    .desc-drawer-header::before { content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: #3f3f3f; border-radius: 2px; }
-    .desc-drawer-header h2 { font-size: 18px; font-weight: 700; color: #fff; margin-top: 4px; }
-    .desc-drawer-close { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; }
-    .desc-drawer-body { flex-grow: 1; overflow-y: auto; padding: 20px 16px; }
-    .desc-main-text-block { background: #212121; border-radius: 12px; padding: 16px; color: #f1f1f1; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; }
-
-    /* Main Scroll Content */
-    .main-scroll-content { flex-grow: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 80px; }
-    
-    /* Category Filter Tags */
-    .filter-tags { display: flex; gap: 8px; overflow-x: auto; padding: 12px; scrollbar-width: none; white-space: nowrap; background: #0f0f0f; position: sticky; top: 0; z-index: 100; }
-    .filter-tags::-webkit-scrollbar { display: none; }
-    .cat-ajax-link { display: inline-block; background: #272727; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #fff; cursor: pointer; }
-    .cat-ajax-link.active { background: #ffffff; color: #0f0f0f; }
-
-    /* Video Feed Grid */
-    .video-feed { padding: 4px 0; }
-    .video-card { margin-bottom: 22px; display: flex; flex-direction: column; background: #0f0f0f; cursor: pointer; }
-    .thumbnail-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; background: #111; overflow: hidden; }
+    .search-input { flex-grow: 1; background: #272727; border: 1px solid #3f3f3f; color: #fff; padding: 6px 14px; border-radius: 18px; outline: none; }
+    .sticky-player-pack { display: none; width: 100%; background: #0f0f0f; z-index: 9999; flex-shrink: 0; }
+    .player-ratio-box { position: relative; width: 100%; padding-top: 56.25%; background: #000; }
+    .player-ratio-box iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+    .mini-meta-box { padding: 12px 16px; }
+    .main-scroll-content { flex-grow: 1; overflow-y: auto; padding-bottom: 80px; }
+    .video-card { margin-bottom: 22px; cursor: pointer; }
+    .thumbnail-wrapper { width: 100%; aspect-ratio: 16/9; background: #111; }
     .thumbnail-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-    
-    .video-details { display: flex; padding: 12px 14px 4px 14px; gap: 12px; }
-    .channel-avatar { width: 38px; height: 38px; border-radius: 50%; background: #272727; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; color: #ff0000; flex-shrink: 0; border: 1px solid #3f3f3f; overflow: hidden; }
-    .meta-data { flex-grow: 1; }
-    .video-title { font-size: 15px; font-weight: 500; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; color: #f1f1f1; }
-    .video-info { font-size: 12px; color: #aaa; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-
-    /* BOTTOM NAVIGATION BAR */
-    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 55px; background: #0f0f0f; border-top: 1px solid #272727; display: flex; justify-content: space-around; align-items: center; font-size: 11px; z-index: 10001; color: #fff; }
-    .nav-item { text-align: center; color: #aaa; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; height: 100%; }
-    .nav-item.active { color: #fff; }
-    .nav-item span { display: block; font-size: 19px; margin-bottom: 2px; color: #fff; }
-    
-    .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10002; display: none; }
-    .menu-overlay.active { display: block; }
-    .ajax-global-loader { display: none; padding: 40px; text-align: center; color: #aaa; font-size: 15px; width: 100%; }
-    .disabled-link { opacity: 0.4; pointer-events: none; }
+    .video-details { display: flex; padding: 12px; gap: 12px; }
+    .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 55px; background: #0f0f0f; border-top: 1px solid #272727; display: flex; justify-content: space-around; align-items: center; z-index: 10001; }
   </style>
 </head>
 <body>
 
   <header class="header-bar">
-    <div class="header-left">
-      <div class="logo-text" id="logo-home-btn">VideoPlus <span>SPA</span></div>
-    </div>
-    <div class="header-right">
-      <button class="search-trigger-btn" id="open-search-btn">🔍</button>
-    </div>
-    
+    <div class="logo-text" id="logo-home-btn">VideoPlus <span>SPA</span></div>
+    <button id="open-search-btn">🔍</button>
     <div class="search-box-container" id="search-box-holder">
       <form class="search-form" id="app-search-form">
-        <input class="search-input" id="search-raw-input" placeholder="Search song or lyrics..." required type="text">
-        <button class="search-close-btn" id="close-search-btn" type="button">✕</button>
+        <input class="search-input" id="search-raw-input" placeholder="Search..." required type="text">
+        <button type="button" id="close-search-btn">✕</button>
       </form>
     </div>
   </header>
 
-  <div class="menu-overlay" id="global-overlay"></div>
-
   <div class="sticky-player-pack" id="master-player-pack">
-    <section class="player-container" id="player-target-iframe-box"></section>
+    <div class="player-container" id="player-target-iframe-box"></div>
     <div class="mini-meta-box">
-      <h1 class="mini-title" id="player-title">Loading...</h1>
-      <div class="meta-line-two">
-        <span class="meta-channel-name" id="player-channel">@Channel</span>
-        <span>•</span>
-        <span id="player-views">0 views</span>
-        <button class="more-trigger-btn" id="open-lyrics-drawer">...Lyrics</button>
-      </div>
-    </div>
-    <div class="action-buttons-row">
-      <button class="action-btn" id="share-app-btn">↩️ Share</button>
-      <button class="action-btn" id="download-app-btn">📥 Download</button>
-    </div>
-  </div>
-
-  <div class="desc-drawer-box" id="lyrics-drawer">
-    <div class="desc-drawer-header">
-      <h2>Song Lyrics & Info</h2>
-      <button class="desc-drawer-close" id="close-lyrics-drawer">✕</button>
-    </div>
-    <div class="desc-drawer-body">
-      <div class="desc-main-text-block" id="lyrics-content-body">Loading...</div>
+      <h1 id="player-title">Loading...</h1>
     </div>
   </div>
 
   <main class="main-scroll-content" id="feed-scroll-container">
-    <div class="filter-tags" id="category-filter-bar">
-      <span class="cat-ajax-link active" data-category="">All</span>
-      <span class="cat-ajax-link" data-category="Music">Music</span>
-      <span class="cat-ajax-link" data-category="Lyrics">Lyrics</span>
-      <span class="cat-ajax-link" data-category="Trending">Trending</span>
-    </div>
-
-    <div class="ajax-global-loader" id="main-feed-loader">⏳ Loading Digital Content...</div>
-
     <div class="video-feed" id="songs-render-grid"></div>
   </main>
 
   <nav class="bottom-nav">
-    <div class="nav-item active" id="nav-home-btn"><span>🏠</span>Home</div>
-    <div class="nav-item" id="nav-trending-btn"><span>🔥</span>Trending</div>
-    <div class="nav-item" id="load-more-btn-trigger"><span>🎞️</span>More Videos</div>
+    <div id="nav-home-btn">🏠 Home</div>
+    <div id="load-more-btn-trigger">🎞️ More</div>
   </nav>
 
   <script src="https://www.youtube.com/iframe_api"></script>
-  
   <script>
     const BLOG_URL = "https://kgeet.blogspot.com"; 
-    
     let ytPlayer = null;
     let currentStartIndex = 1;
-    let activeCategory = "";
-    let activeSearchQuery = "";
-    let activeVideoDataGlobal = { id: "", title: "", desc: "" };
-    let isAppendModeGlobal = false;
-    const MAX_DOM_CARDS = 30;
 
-    function playTargetYouTubeVideo(id, title, description, channel, views) {
-      activeVideoDataGlobal = { id: id, title: title, desc: description };
+    function playTargetYouTubeVideo(id, title) {
       document.getElementById('master-player-pack').style.display = 'block';
       document.getElementById('player-title').innerText = title;
-      document.getElementById('player-channel').innerText = channel ? "@" + channel : "@Official";
-      document.getElementById('player-views').innerText = views || "100K views";
-      document.getElementById('lyrics-content-body').innerText = description || "No lyrics available for this song.";
 
-      const iframeBox = document.getElementById('player-target-iframe-box');
-      iframeBox.innerHTML = '<div class="player-ratio-box"><div id="yt-placeholder"></div></div>';
-
-      if(ytPlayer && ytPlayer.destroy) { try { ytPlayer.destroy(); } catch(e){} }
-
-      ytPlayer = new YT.Player('yt-placeholder', {
-        width: '100%', height: '100%', videoId: id,
-        playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'vq': 'hd720' }
-      });
-      
-      document.getElementById('feed-scroll-container').scrollTop = 0;
+      if (ytPlayer && typeof ytPlayer.cueVideoById === 'function') {
+        ytPlayer.cueVideoById(id);
+        ytPlayer.playVideo();
+      } else {
+        document.getElementById('player-target-iframe-box').innerHTML = '<div class="player-ratio-box"><div id="yt-placeholder"></div></div>';
+        ytPlayer = new YT.Player('yt-placeholder', {
+          width: '100%', height: '100%', videoId: id,
+          playerVars: { 'autoplay': 1, 'rel': 0, 'modestbranding': 1 }
+        });
+      }
     }
 
-    // ब्लगस्पट JSONP डाटा लोड गर्ने नयाँ सुरक्षित फङ्सन
-    function fetchBloggerDataAPI(isAppendMode = false) {
-      isAppendModeGlobal = isAppendMode;
-      const loader = document.getElementById('main-feed-loader');
-      const grid = document.getElementById('songs-render-grid');
-      const moreBtn = document.getElementById('load-more-btn-trigger');
-      
-      if(!isAppendMode) {
-        loader.style.display = 'block';
-        grid.style.opacity = '0.3';
-        currentStartIndex = 1;
-      } else {
-        moreBtn.innerHTML = "<span>⏳</span>Loading...";
-      }
-
-      // JSONP को लागि युआरएल तयार गर्ने
-      let fetchUrl = `${BLOG_URL}/feeds/posts/default`;
-      if(activeCategory) {
-        fetchUrl += `/-/${encodeURIComponent(activeCategory)}`;
-      }
-      fetchUrl += `?alt=json-in-script&callback=parseBloggerResponse&max-results=15&start-index=${currentStartIndex}`;
-      
-      if(activeSearchQuery) {
-        fetchUrl += `&q=${encodeURIComponent(activeSearchQuery)}`;
-      }
-
-      // पुरानो स्क्रिप्ट हटाएर नयाँ स्क्रिप्ट ट्याग थप्ने (CORS बाइपास गर्न)
-      const oldScript = document.getElementById('blogger-jsonp-script');
-      if(oldScript) oldScript.remove();
-
+    function fetchBloggerDataAPI(isAppend = false) {
       const script = document.createElement('script');
-      script.id = 'blogger-jsonp-script';
-      script.src = fetchUrl;
+      script.src = `${BLOG_URL}/feeds/posts/default?alt=json-in-script&callback=parseBloggerResponse&max-results=15&start-index=${currentStartIndex}`;
       document.body.appendChild(script);
     }
 
-    // JSONP रेस्पोन्स ह्यान्डलर (गिटहबमा यसले डाटा देखाउँछ)
     window.parseBloggerResponse = function(data) {
-      const loader = document.getElementById('main-feed-loader');
       const grid = document.getElementById('songs-render-grid');
-      const moreBtn = document.getElementById('load-more-btn-trigger');
-
-      loader.style.display = 'none';
-      grid.style.opacity = '1';
-      
-      if(!isAppendModeGlobal) grid.innerHTML = "";
-      
       const entries = data.feed.entry;
-      if(entries && entries.length > 0) {
-        currentStartIndex += entries.length;
+      entries.forEach(entry => {
+        const title = entry.title.$t;
+        const content = entry.content.$t;
+        const jsonMatch = content.match(/\{[\s\S]*?\}/);
+        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+        const videoId = parsed.id;
+        if(!videoId) return;
 
-        entries.forEach(entry => {
-          const title = entry.title.$t;
-          const contentHtml = entry.content ? entry.content.$t : "";
-          
-          let videoId = "", channel = "Official", views = "100K views", songDescription = contentHtml;
-          
-          try {
-            const jsonMatch = contentHtml.match(/\{[\s\S]*?\}/);
-            if(jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              videoId = parsed.id || "";
-              channel = parsed.channel || "Official";
-              views = parsed.views || "100K views";
-              songDescription = contentHtml.replace(/\{[\s\S]*?\}/g, '').replace(/<[^>]*>/g, '').trim();
-            }
-          } catch(e) { console.log("JSON parsing skipped"); }
-
-          if(!videoId) return;
-
-          const card = document.createElement('div');
-          card.className = "video-card";
-          card.innerHTML = `
-            <div class="thumbnail-wrapper">
-              <img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" alt="Thumbnail">
-            </div>
-            <div class="video-details">
-              <div class="channel-avatar"><span>${channel.charAt(0).toUpperCase()}</span></div>
-              <div class="meta-data">
-                <h3 class="video-title">${title}</h3>
-                <div class="video-info"><span>@${channel}</span>•<span>${views}</span></div>
-              </div>
-            </div>
-          `;
-
-          card.addEventListener('click', () => {
-            playTargetYouTubeVideo(videoId, title, songDescription, channel, views);
-          });
-
-          grid.appendChild(card);
-        });
-
-        if(isAppendModeGlobal) {
-          const allCurrentCards = grid.querySelectorAll('.video-card');
-          if(allCurrentCards.length > MAX_DOM_CARDS) {
-            const removeCount = allCurrentCards.length - MAX_DOM_CARDS;
-            for(let i=0; i<removeCount; i++) { allCurrentCards[i].remove(); }
-          }
-        }
-
-        moreBtn.innerHTML = "<span>🎞️</span>More Videos";
-        moreBtn.classList.remove('disabled-link');
-      } else {
-        if(!isAppendModeGlobal) grid.innerHTML = "<div style='padding:50px; text-align:center; color:#aaa;'>❌ No videos found matching criteria.</div>";
-        moreBtn.innerHTML = "<span>🚫</span>No More Videos";
-        moreBtn.classList.add('disabled-link');
-      }
+        const card = document.createElement('div');
+        card.className = "video-card";
+        card.innerHTML = `<div class="thumbnail-wrapper"><img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg"></div><div class="video-details">${title}</div>`;
+        card.onclick = () => playTargetYouTubeVideo(videoId, title);
+        grid.appendChild(card);
+      });
+      currentStartIndex += entries.length;
     };
 
-    document.addEventListener("DOMContentLoaded", () => {
-      fetchBloggerDataAPI(); 
-
-      const tags = document.querySelectorAll('.cat-ajax-link');
-      tags.forEach(tag => {
-        tag.addEventListener('click', () => {
-          tags.forEach(t => t.classList.remove('active'));
-          tag.classList.add('active');
-          activeCategory = tag.getAttribute('data-category');
-          activeSearchQuery = ""; 
-          fetchBloggerDataAPI();
-        });
-      });
-
-      document.getElementById('app-search-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        activeSearchQuery = document.getElementById('search-raw-input').value.trim();
-        activeCategory = ""; 
-        document.getElementById('search-box-holder').classList.remove('active');
-        fetchBloggerDataAPI();
-      });
-
-      document.getElementById('load-more-btn-trigger').addEventListener('click', () => {
-        fetchBloggerDataAPI(true);
-      });
-
-      document.getElementById('nav-home-btn').addEventListener('click', () => {
-        activeCategory = ""; activeSearchQuery = "";
-        fetchBloggerDataAPI();
-      });
-      document.getElementById('nav-trending-btn').addEventListener('click', () => {
-        activeCategory = "Trending"; activeSearchQuery = "";
-        fetchBloggerDataAPI();
-      });
-      document.getElementById('logo-home-btn').addEventListener('click', () => {
-        activeCategory = ""; activeSearchQuery = "";
-        fetchBloggerDataAPI();
-      });
-
-      const overlay = document.getElementById('global-overlay');
-      const drawer = document.getElementById('lyrics-drawer');
-
-      document.getElementById('open-lyrics-drawer').addEventListener('click', () => { drawer.classList.add('open'); overlay.classList.add('active'); });
-      document.getElementById('close-lyrics-drawer').addEventListener('click', () => { drawer.classList.remove('open'); overlay.classList.remove('active'); });
-      overlay.addEventListener('click', () => { drawer.classList.remove('open'); overlay.classList.remove('active'); });
-
-      document.getElementById('open-search-btn').addEventListener('click', () => document.getElementById('search-box-holder').classList.add('active'));
-      document.getElementById('close-search-btn').addEventListener('click', () => document.getElementById('search-box-holder').classList.remove('active'));
-
-      document.getElementById('share-app-btn').addEventListener('click', () => {
-        if(navigator.share && activeVideoDataGlobal.id) {
-          navigator.share({ title: activeVideoDataGlobal.title, url: `https://youtu.be/${activeVideoDataGlobal.id}` });
-        } else {
-          alert("YouTube URL: https://youtu.be/" + activeVideoDataGlobal.id);
-        }
-      });
-      document.getElementById('download-app-btn').addEventListener('click', () => {
-        if(activeVideoDataGlobal.id) window.open(`https://www.ssyoutube.com/watch?v=${activeVideoDataGlobal.id}`, '_blank');
-      });
-    });
+    document.addEventListener("DOMContentLoaded", () => fetchBloggerDataAPI());
+    document.getElementById('open-search-btn').onclick = () => document.getElementById('search-box-holder').classList.add('active');
+    document.getElementById('close-search-btn').onclick = () => document.getElementById('search-box-holder').classList.remove('active');
   </script>
 </body>
 </html>
