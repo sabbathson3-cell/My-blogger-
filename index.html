@@ -87,6 +87,12 @@
     <div class="custom-player-controls">
       <button class="ctrl-btn" id="custom-play-pause-btn">⏸️ Pause</button>
     </div>
+    
+    <div class="seek-bar-container" style="padding: 10px 16px;">
+  <input type="range" id="video-seek-bar" value="0" min="0" max="100" 
+         style="width:100%; cursor:pointer;">
+</div>
+
 
     <div class="mini-meta-box">
       <h1 class="mini-title" id="player-title">Loading...</h1>
@@ -243,6 +249,28 @@
       document.getElementById('close-lyrics-btn').addEventListener('click', () => { drawer.classList.remove('open'); overlay.classList.remove('active'); });
       overlay.addEventListener('click', () => { drawer.classList.remove('open'); overlay.classList.remove('active'); });
     });
+    
+    const seekBar = document.getElementById('video-seek-bar');
+
+// १. भिडियो चल्दा बार अपडेट गर्ने (हरेक १ सेकेन्डमा)
+setInterval(() => {
+  if (ytPlayerInstance && ytPlayerInstance.getCurrentTime) {
+    const duration = ytPlayerInstance.getDuration();
+    const currentTime = ytPlayerInstance.getCurrentTime();
+    
+    // बारको भ्यालु अपडेट गर्ने
+    seekBar.max = duration;
+    seekBar.value = currentTime;
+  }
+}, 1000);
+
+// २. प्रयोगकर्ताले तान्दा भिडियो जम्प गर्ने
+seekBar.addEventListener('input', (e) => {
+  if (ytPlayerInstance) {
+    ytPlayerInstance.seekTo(e.target.value, true);
+  }
+});
+
   </script>
 </body>
-</html>
+</html> 
